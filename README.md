@@ -1,3 +1,3 @@
 # Waffle Watch
-Yay!!
+Android App to visualize the Waffle House Index.
 
