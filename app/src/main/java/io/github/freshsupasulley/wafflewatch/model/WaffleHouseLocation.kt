@@ -1,9 +1,10 @@
 package io.github.freshsupasulley.wafflewatch.model
 
-import org.json.JSONArray
 import org.json.JSONObject
 
 enum class LocationStatus { GREEN, YELLOW, RED }
+
+data class LocationsResponse(val timestamp: Long, val locations: List<WaffleHouseLocation>)
 
 data class WaffleHouseLocation(
     val locationId: String,
@@ -15,10 +16,11 @@ data class WaffleHouseLocation(
     val formattedHours: String,
 )
 
-fun parseLocations(json: String): List<WaffleHouseLocation> {
+fun parseLocations(json: String): LocationsResponse {
     val root = JSONObject(json)
+    val timestamp = root.getLong("timestamp")
     val array = root.getJSONArray("locations")
-    return buildList {
+    val locations = buildList {
         for (i in 0 until array.length()) {
             val loc = array.getJSONObject(i)
             val code = loc.optString("code", "")
@@ -37,4 +39,5 @@ fun parseLocations(json: String): List<WaffleHouseLocation> {
             ))
         }
     }
+    return LocationsResponse(timestamp, locations)
 }

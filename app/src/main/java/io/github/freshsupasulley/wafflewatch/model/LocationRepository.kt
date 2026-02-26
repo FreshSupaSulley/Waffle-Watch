@@ -7,7 +7,7 @@ import java.net.HttpURLConnection
 import java.net.URL
 
 interface LocationRepository {
-    suspend fun fetchLocations(): List<WaffleHouseLocation>
+    suspend fun fetchLocations(): LocationsResponse
 
     companion object {
         fun create(): LocationRepository = RemoteLocationRepository(BuildConfig.LOCATIONS_SERVER_URL)

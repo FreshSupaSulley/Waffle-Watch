@@ -30,6 +30,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import io.github.freshsupasulley.wafflewatch.model.LocationRepository
+import io.github.freshsupasulley.wafflewatch.model.LocationsResponse
 import io.github.freshsupasulley.wafflewatch.model.WaffleHouseLocation
 import io.github.freshsupasulley.wafflewatch.ui.MapScreen
 import io.github.freshsupasulley.wafflewatch.ui.theme.WaffleWatchTheme
@@ -54,6 +55,7 @@ fun WaffleWatchApp() {
     var showIntro by rememberSaveable { mutableStateOf(true) }
     var currentDestination by rememberSaveable { mutableStateOf(AppDestinations.HOME) }
     var locations by remember { mutableStateOf<List<WaffleHouseLocation>>(emptyList()) }
+    var timestamp by remember { mutableStateOf<Long?>(null) }
     var fetchError by remember { mutableStateOf<String?>(null) }
     val repository = remember { LocationRepository.create() }
     val snackbarHostState = remember { SnackbarHostState() }
@@ -62,7 +64,9 @@ fun WaffleWatchApp() {
     suspend fun loadLocations() {
         fetchError = null
         try {
-            locations = repository.fetchLocations()
+            val response = repository.fetchLocations()
+            locations = response.locations
+            timestamp = response.timestamp
         } catch (e: Exception) {
             fetchError = e.message ?: "Network error"
         }
@@ -101,12 +105,14 @@ fun WaffleWatchApp() {
                 when (currentDestination) {
                     AppDestinations.HOME -> MapScreen(
                         locations = locations,
+                        timestamp = timestamp,
                         onRefresh = {
                             fetchError = null
                             try {
-                                val result = repository.fetchLocations()
-                                locations = result
-                                result
+                                val response = repository.fetchLocations()
+                                locations = response.locations
+                                timestamp = response.timestamp
+                                response.locations
                             } catch (e: Exception) {
                                 fetchError = e.message ?: "Network error"
                                 locations

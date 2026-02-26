@@ -75,6 +75,9 @@ import org.maplibre.geojson.Feature
 import org.maplibre.geojson.FeatureCollection
 import org.maplibre.geojson.Point
 import java.net.URI
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 
 private fun WaffleHouseLocation.toFeature(): Feature {
@@ -91,6 +94,7 @@ private fun WaffleHouseLocation.toFeature(): Feature {
 @Composable
 fun MapScreen(
     locations: List<WaffleHouseLocation>,
+    timestamp: Long?,
     onRefresh: suspend () -> List<WaffleHouseLocation>,
 ) {
     val context = LocalContext.current
@@ -267,8 +271,12 @@ fun MapScreen(
                     )
                 }
                 Text(location.formattedHours, style = MaterialTheme.typography.bodyMedium)
+                val refreshedText = timestamp?.let {
+                    val fmt = SimpleDateFormat("MMM d 'at' h:mm a", Locale.getDefault())
+                    "Last refreshed: ${fmt.format(Date(it))}"
+                } ?: "Last refreshed: unknown"
                 Text(
-                    text = "Last refreshed: Sample data",
+                    text = refreshedText,
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
