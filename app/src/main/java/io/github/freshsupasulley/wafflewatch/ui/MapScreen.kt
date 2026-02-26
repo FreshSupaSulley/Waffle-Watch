@@ -253,24 +253,32 @@ fun MapScreen(
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
                 )
-                Text(location.address, style = MaterialTheme.typography.bodyMedium)
+                Text(
+                    text = location.address,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
                 val statusColor = when (location.status) {
                     LocationStatus.GREEN -> Color(0xFF4CAF50)
                     LocationStatus.YELLOW -> Color(0xFFFFC107)
                     LocationStatus.RED -> Color(0xFFF44336)
                 }
-                Surface(
-                    shape = RoundedCornerShape(4.dp),
-                    color = statusColor,
-                ) {
+                val statusLabel = when (location.status) {
+                    LocationStatus.GREEN -> "Open"
+                    LocationStatus.YELLOW -> "Limited"
+                    LocationStatus.RED -> "Closed"
+                }
+                Surface(shape = RoundedCornerShape(4.dp), color = statusColor) {
                     Text(
-                        text = location.status.name,
+                        text = statusLabel,
                         modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
                         color = Color.White,
                         style = MaterialTheme.typography.labelMedium,
                     )
                 }
-                Text(location.formattedHours, style = MaterialTheme.typography.bodyMedium)
+                val hoursParts = location.formattedHours.split("|", limit = 2)
+                val hoursText = hoursParts.joinToString(" · ") { it.trim() }
+                Text(hoursText, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 val refreshedText = timestamp?.let {
                     val fmt = SimpleDateFormat("MMM d 'at' h:mm a", Locale.getDefault())
                     "Last refreshed: ${fmt.format(Date(it))}"
