@@ -10,6 +10,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountBox
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material3.Icon
 import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
@@ -50,6 +51,7 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 fun WaffleWatchApp() {
+    var showIntro by rememberSaveable { mutableStateOf(true) }
     var currentDestination by rememberSaveable { mutableStateOf(AppDestinations.HOME) }
     var locations by remember { mutableStateOf<List<WaffleHouseLocation>>(emptyList()) }
     var fetchError by remember { mutableStateOf<String?>(null) }
@@ -80,41 +82,48 @@ fun WaffleWatchApp() {
         }
     }
 
-    NavigationSuiteScaffold(
-        navigationSuiteItems = {
-            AppDestinations.entries.forEach {
-                item(
-                    icon = { Icon(it.icon, contentDescription = it.label) },
-                    label = { Text(it.label) },
-                    selected = it == currentDestination,
-                    onClick = { currentDestination = it },
+    if (showIntro) {
+        IntroScreen(onGetStarted = { showIntro = false })
+    } else {
+        NavigationSuiteScaffold(
+            navigationSuiteItems = {
+                AppDestinations.entries.forEach {
+                    item(
+                        icon = { Icon(it.icon, contentDescription = it.label) },
+                        label = { Text(it.label) },
+                        selected = it == currentDestination,
+                        onClick = { currentDestination = it },
+                    )
+                }
+            },
+        ) {
+            Box(modifier = Modifier.fillMaxSize()) {
+                when (currentDestination) {
+                    AppDestinations.HOME -> MapScreen(
+                        locations = locations,
+                        onRefresh = {
+                            fetchError = null
+                            try {
+                                val result = repository.fetchLocations()
+                                locations = result
+                                result
+                            } catch (e: Exception) {
+                                fetchError = e.message ?: "Network error"
+                                locations
+                            }
+                        },
+                    )
+                    AppDestinations.INTRO -> IntroScreen(onGetStarted = {
+                        currentDestination = AppDestinations.HOME
+                    })
+                    AppDestinations.FAVORITES -> Text("Favorites (coming soon)")
+                    AppDestinations.PROFILE -> Text("Profile (coming soon)")
+                }
+                SnackbarHost(
+                    hostState = snackbarHostState,
+                    modifier = Modifier.align(Alignment.BottomCenter),
                 )
             }
-        },
-    ) {
-        Box(modifier = Modifier.fillMaxSize()) {
-            when (currentDestination) {
-                AppDestinations.HOME -> MapScreen(
-                    locations = locations,
-                    onRefresh = {
-                        fetchError = null
-                        try {
-                            val result = repository.fetchLocations()
-                            locations = result
-                            result
-                        } catch (e: Exception) {
-                            fetchError = e.message ?: "Network error"
-                            locations
-                        }
-                    },
-                )
-                AppDestinations.FAVORITES -> Text("Favorites (coming soon)")
-                AppDestinations.PROFILE -> Text("Profile (coming soon)")
-            }
-            SnackbarHost(
-                hostState = snackbarHostState,
-                modifier = Modifier.align(Alignment.BottomCenter),
-            )
         }
     }
 }
@@ -124,6 +133,7 @@ enum class AppDestinations(
     val icon: ImageVector,
 ) {
     HOME("Home", Icons.Default.Home),
+    INTRO("About", Icons.Default.Info),
     FAVORITES("Favorites", Icons.Default.Favorite),
     PROFILE("Profile", Icons.Default.AccountBox),
 }
