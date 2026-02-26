@@ -17,7 +17,7 @@ captures/
 output-metadata.json
 
 # IntelliJ - Ignore most of .idea but keep useful shared config
-.idea/*
+.idea/
 !.idea/codeStyles/
 !.idea/inspectionProfiles/
 !.idea/runConfigurations/
@@ -36,4 +36,4 @@ google-services.json
 
 # Custom
 .DS_Store
-tmp
+tmp/
