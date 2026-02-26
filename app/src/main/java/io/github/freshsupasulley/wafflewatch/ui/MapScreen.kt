@@ -278,15 +278,23 @@ fun MapScreen(
 }
 
 private fun enableLocationComponent(map: MapLibreMap, style: Style, context: android.content.Context) {
-    map.locationComponent.apply {
-        if (!isLocationComponentActivated) {
-            activateLocationComponent(
-                LocationComponentActivationOptions.builder(context, style).build()
-            )
+    if (ContextCompat.checkSelfPermission(
+            context, Manifest.permission.ACCESS_FINE_LOCATION
+        ) != PackageManager.PERMISSION_GRANTED
+    ) return
+    try {
+        map.locationComponent.apply {
+            if (!isLocationComponentActivated) {
+                activateLocationComponent(
+                    LocationComponentActivationOptions.builder(context, style).build()
+                )
+            }
+            isLocationComponentEnabled = true
+            cameraMode = CameraMode.TRACKING
+            renderMode = RenderMode.COMPASS
         }
-        isLocationComponentEnabled = true
-        cameraMode = CameraMode.TRACKING
-        renderMode = RenderMode.COMPASS
+    } catch (_: SecurityException) {
+        // Permission was revoked between check and use — no-op
     }
 }
 
