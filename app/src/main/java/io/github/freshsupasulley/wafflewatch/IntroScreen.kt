@@ -26,7 +26,9 @@ fun IntroScreen(onGetStarted: () -> Unit) {
         Spacer(modifier = Modifier.height(16.dp))
         
         Text(
-            text = "The Waffle House Index is an informal metric used by FEMA to determine the effect of a storm and the likely scale of assistance required for disaster recovery.",
+            text = "The Waffle House Index is an informal metric used to determine the severity of weather in a particular area.\n\n" +
+                        "Waffle House is notorious for being open no matter the weather, so if a Waffle House is closed, you know it's serious.\n\n" +
+                        "Use this app to determine how bad the weather actually is. If your local Waffle House is closed, maybe consider changing travel plans. Or use this app to find a tasty meal. Your choice.",
             style = MaterialTheme.typography.bodyLarge,
             textAlign = TextAlign.Center
         )
