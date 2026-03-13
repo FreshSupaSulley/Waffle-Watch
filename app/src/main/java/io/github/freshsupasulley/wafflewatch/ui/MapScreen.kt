@@ -95,7 +95,7 @@ private fun WaffleHouseLocation.toFeature(): Feature {
 fun MapScreen(
     locations: List<WaffleHouseLocation>,
     timestamp: Long?,
-    onRefresh: suspend () -> List<WaffleHouseLocation>,
+    onRefresh: suspend () -> Unit,
 ) {
     val context = LocalContext.current
     var displayedLocations by remember { mutableStateOf(locations) }
@@ -139,7 +139,7 @@ fun MapScreen(
             coroutineScope.launch {
                 isRefreshing = true
                 try {
-                    displayedLocations = onRefresh()
+                    onRefresh()
                 } finally {
                     isRefreshing = false
                 }

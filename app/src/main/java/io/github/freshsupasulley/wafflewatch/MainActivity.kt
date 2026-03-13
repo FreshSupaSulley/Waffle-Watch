@@ -20,6 +20,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteScaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -29,9 +30,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
-import io.github.freshsupasulley.wafflewatch.model.LocationRepository
-import io.github.freshsupasulley.wafflewatch.model.LocationsResponse
-import io.github.freshsupasulley.wafflewatch.model.WaffleHouseLocation
+import androidx.lifecycle.viewmodel.compose.viewModel
 import io.github.freshsupasulley.wafflewatch.ui.MapScreen
 import io.github.freshsupasulley.wafflewatch.ui.theme.WaffleWatchTheme
 import kotlinx.coroutines.launch
@@ -51,28 +50,14 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-fun WaffleWatchApp() {
+fun WaffleWatchApp(viewModel: LocationViewModel = viewModel()) {
     var showIntro by rememberSaveable { mutableStateOf(true) }
     var currentDestination by rememberSaveable { mutableStateOf(AppDestinations.HOME) }
-    var locations by remember { mutableStateOf<List<WaffleHouseLocation>>(emptyList()) }
-    var timestamp by remember { mutableStateOf<Long?>(null) }
-    var fetchError by remember { mutableStateOf<String?>(null) }
-    val repository = remember { LocationRepository.create() }
+    val locations by viewModel.locations.collectAsState()
+    val timestamp by viewModel.timestamp.collectAsState()
+    val fetchError by viewModel.error.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
-
-    suspend fun loadLocations() {
-        fetchError = null
-        try {
-            val response = repository.fetchLocations()
-            locations = response.locations
-            timestamp = response.timestamp
-        } catch (e: Exception) {
-            fetchError = e.message ?: "Network error"
-        }
-    }
-
-    LaunchedEffect(Unit) { loadLocations() }
 
     LaunchedEffect(fetchError) {
         val error = fetchError ?: return@LaunchedEffect
@@ -82,7 +67,7 @@ fun WaffleWatchApp() {
             duration = SnackbarDuration.Indefinite,
         )
         if (result == SnackbarResult.ActionPerformed) {
-            scope.launch { loadLocations() }
+            viewModel.loadLocations()
         }
     }
 
@@ -107,16 +92,8 @@ fun WaffleWatchApp() {
                         locations = locations,
                         timestamp = timestamp,
                         onRefresh = {
-                            fetchError = null
-                            try {
-                                val response = repository.fetchLocations()
-                                locations = response.locations
-                                timestamp = response.timestamp
-                                response.locations
-                            } catch (e: Exception) {
-                                fetchError = e.message ?: "Network error"
-                                locations
-                            }
+                            viewModel.clearError()
+                            viewModel.loadLocations()
                         },
                     )
                     AppDestinations.INTRO -> IntroScreen(onGetStarted = {

@@ -1,13 +1,16 @@
 package io.github.freshsupasulley.wafflewatch.model
 
+import androidx.room.Entity
+import androidx.room.PrimaryKey
 import org.json.JSONObject
 
 enum class LocationStatus { GREEN, YELLOW, RED }
 
 data class LocationsResponse(val timestamp: Long, val locations: List<WaffleHouseLocation>)
 
+@Entity(tableName = "locations")
 data class WaffleHouseLocation(
-    val locationId: String,
+    @PrimaryKey val locationId: String,
     val name: String,
     val address: String,
     val latitude: Double,
