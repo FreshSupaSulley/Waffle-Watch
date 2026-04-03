@@ -126,8 +126,8 @@ fun WaffleWatchApp(viewModel: LocationViewModel = viewModel()) {
                     AppDestinations.INTRO -> IntroScreen(onGetStarted = {
                         currentDestination = AppDestinations.HOME
                     })
-                    AppDestinations.FAVORITES -> Text("Favorites (coming soon)")
-                    AppDestinations.PROFILE -> Text("Profile (coming soon)")
+//                    AppDestinations.FAVORITES -> Text("Favorites (coming soon)")
+//                    AppDestinations.PROFILE -> Text("Profile (coming soon)")
                 }
                 SnackbarHost(
                     hostState = snackbarHostState,
@@ -144,6 +144,6 @@ enum class AppDestinations(
 ) {
     HOME("Home", Icons.Default.Home),
     INTRO("About", Icons.Default.Info),
-    FAVORITES("Favorites", Icons.Default.Favorite),
-    PROFILE("Profile", Icons.Default.AccountBox),
+//    FAVORITES("Favorites", Icons.Default.Favorite),
+//    PROFILE("Profile", Icons.Default.AccountBox),
 }
