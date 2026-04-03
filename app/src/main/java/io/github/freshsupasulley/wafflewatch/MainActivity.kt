@@ -1,5 +1,8 @@
 package io.github.freshsupasulley.wafflewatch
 
+import android.content.Context
+import android.hardware.Sensor
+import android.hardware.SensorManager
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -19,6 +22,7 @@ import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Text
 import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteScaffold
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -30,6 +34,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewmodel.compose.viewModel
 import io.github.freshsupasulley.wafflewatch.ui.MapScreen
 import io.github.freshsupasulley.wafflewatch.ui.theme.WaffleWatchTheme
@@ -58,6 +63,28 @@ fun WaffleWatchApp(viewModel: LocationViewModel = viewModel()) {
     val fetchError by viewModel.error.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
+    val context = LocalContext.current
+
+    DisposableEffect(Unit) {
+        val sensorManager = context.getSystemService(Context.SENSOR_SERVICE) as SensorManager
+        val accelerometer = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
+        val shakeDetector = ShakeDetector {
+            scope.launch {
+                snackbarHostState.showSnackbar("Refreshing locations...")
+            }
+            viewModel.loadLocations()
+        }
+
+        sensorManager.registerListener(
+            shakeDetector,
+            accelerometer,
+            SensorManager.SENSOR_DELAY_UI
+        )
+
+        onDispose {
+            sensorManager.unregisterListener(shakeDetector)
+        }
+    }
 
     LaunchedEffect(fetchError) {
         val error = fetchError ?: return@LaunchedEffect
