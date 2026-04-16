@@ -35,6 +35,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.viewmodel.compose.viewModel
 import io.github.freshsupasulley.wafflewatch.ui.MapScreen
 import io.github.freshsupasulley.wafflewatch.ui.theme.WaffleWatchTheme
@@ -59,20 +60,24 @@ fun WaffleWatchApp(viewModel: LocationViewModel = viewModel()) {
     var showIntro by rememberSaveable { mutableStateOf(true) }
     var currentDestination by rememberSaveable { mutableStateOf(AppDestinations.HOME) }
     val locations by viewModel.locations.collectAsState()
+    val features by viewModel.features.collectAsState()
     val timestamp by viewModel.timestamp.collectAsState()
     val fetchError by viewModel.error.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
 
-    DisposableEffect(Unit) {
+    val refreshingMsg = stringResource(R.string.refreshing)
+    DisposableEffect(currentDestination) {
         val sensorManager = context.getSystemService(Context.SENSOR_SERVICE) as SensorManager
         val accelerometer = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
         val shakeDetector = ShakeDetector {
-            scope.launch {
-                snackbarHostState.showSnackbar("Refreshing locations...")
+            if (currentDestination == AppDestinations.HOME) {
+                scope.launch {
+                    snackbarHostState.showSnackbar(refreshingMsg)
+                }
+                viewModel.loadLocations()
             }
-            viewModel.loadLocations()
         }
 
         sensorManager.registerListener(
@@ -86,11 +91,13 @@ fun WaffleWatchApp(viewModel: LocationViewModel = viewModel()) {
         }
     }
 
+    val failedMsg = stringResource(R.string.failed_to_load)
+    val retryLabel = stringResource(R.string.retry)
     LaunchedEffect(fetchError) {
         val error = fetchError ?: return@LaunchedEffect
         val result = snackbarHostState.showSnackbar(
-            message = "Failed to load locations: $error",
-            actionLabel = "Retry",
+            message = String.format(failedMsg, error),
+            actionLabel = retryLabel,
             duration = SnackbarDuration.Indefinite,
         )
         if (result == SnackbarResult.ActionPerformed) {
@@ -105,8 +112,8 @@ fun WaffleWatchApp(viewModel: LocationViewModel = viewModel()) {
             navigationSuiteItems = {
                 AppDestinations.entries.forEach {
                     item(
-                        icon = { Icon(it.icon, contentDescription = it.label) },
-                        label = { Text(it.label) },
+                        icon = { Icon(it.icon, contentDescription = stringResource(it.labelRes)) },
+                        label = { Text(stringResource(it.labelRes)) },
                         selected = it == currentDestination,
                         onClick = { currentDestination = it },
                     )
@@ -117,6 +124,7 @@ fun WaffleWatchApp(viewModel: LocationViewModel = viewModel()) {
                 when (currentDestination) {
                     AppDestinations.HOME -> MapScreen(
                         locations = locations,
+                        features = features,
                         timestamp = timestamp,
                         onRefresh = {
                             viewModel.clearError()
@@ -126,8 +134,8 @@ fun WaffleWatchApp(viewModel: LocationViewModel = viewModel()) {
                     AppDestinations.INTRO -> IntroScreen(onGetStarted = {
                         currentDestination = AppDestinations.HOME
                     })
-//                    AppDestinations.FAVORITES -> Text("Favorites (coming soon)")
-//                    AppDestinations.PROFILE -> Text("Profile (coming soon)")
+                    AppDestinations.FAVORITES -> Text("Favorites (coming soon)")
+                    AppDestinations.PROFILE -> Text("Profile (coming soon)")
                 }
                 SnackbarHost(
                     hostState = snackbarHostState,
@@ -139,11 +147,11 @@ fun WaffleWatchApp(viewModel: LocationViewModel = viewModel()) {
 }
 
 enum class AppDestinations(
-    val label: String,
+    val labelRes: Int,
     val icon: ImageVector,
 ) {
-    HOME("Home", Icons.Default.Home),
-    INTRO("About", Icons.Default.Info),
-//    FAVORITES("Favorites", Icons.Default.Favorite),
-//    PROFILE("Profile", Icons.Default.AccountBox),
+    HOME(R.string.nav_home, Icons.Default.Home),
+    INTRO(R.string.nav_about, Icons.Default.Info),
+    FAVORITES(R.string.nav_favorites, Icons.Default.Favorite),
+    PROFILE(R.string.nav_profile, Icons.Default.AccountBox),
 }

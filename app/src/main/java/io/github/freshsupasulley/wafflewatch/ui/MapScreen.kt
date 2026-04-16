@@ -40,15 +40,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
-import androidx.lifecycle.compose.LocalLifecycleOwner
-import com.google.gson.JsonObject
 import io.github.freshsupasulley.wafflewatch.model.LocationStatus
 import io.github.freshsupasulley.wafflewatch.model.WaffleHouseLocation
 import kotlinx.coroutines.launch
@@ -73,48 +70,32 @@ import org.maplibre.android.style.layers.SymbolLayer
 import org.maplibre.android.style.sources.GeoJsonSource
 import org.maplibre.geojson.Feature
 import org.maplibre.geojson.FeatureCollection
-import org.maplibre.geojson.Point
 import java.net.URI
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
-
-private fun WaffleHouseLocation.toFeature(): Feature {
-    val props = JsonObject()
-    props.addProperty("locationId", locationId)
-    props.addProperty("name", name)
-    props.addProperty("address", address)
-    props.addProperty("status", status.name)
-    props.addProperty("formattedHours", formattedHours)
-    return Feature.fromGeometry(Point.fromLngLat(longitude, latitude), props)
-}
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MapScreen(
     locations: List<WaffleHouseLocation>,
+    features: List<Feature>, // Performance: Passed in pre-calculated from ViewModel
     timestamp: Long?,
     onRefresh: suspend () -> Unit,
 ) {
     val context = LocalContext.current
-    var displayedLocations by remember { mutableStateOf(locations) }
     var isRefreshing by remember { mutableStateOf(false) }
     val coroutineScope = rememberCoroutineScope()
     var activeFilters by remember { mutableStateOf(LocationStatus.entries.toSet()) }
     var selectedLocation by remember { mutableStateOf<WaffleHouseLocation?>(null) }
     var mapLibreMap by remember { mutableStateOf<MapLibreMap?>(null) }
     var mapStyle by remember { mutableStateOf<Style?>(null) }
-    val allFeatures = remember(displayedLocations) { displayedLocations.map { it.toFeature() } }
 
-    // Sync external prop → local state on initial/external change
-    LaunchedEffect(locations) { displayedLocations = locations }
-
-    // Push new features to GeoJSON source after refresh
-    LaunchedEffect(allFeatures, mapStyle) {
+    // Update GeoJSON source when features change (already calculated on background thread)
+    LaunchedEffect(features, mapStyle) {
         val style = mapStyle ?: return@LaunchedEffect
         (style.getSource("wh-source") as? GeoJsonSource)
-            ?.setGeoJson(FeatureCollection.fromFeatures(allFeatures))
+            ?.setGeoJson(FeatureCollection.fromFeatures(features))
     }
 
     // Toggle layer visibility when filters change
@@ -149,8 +130,8 @@ fun MapScreen(
     ) {
         MapLibreMapView(
             modifier = Modifier.fillMaxSize(),
-            allFeatures = allFeatures,
-            locationsById = remember(displayedLocations) { displayedLocations.associateBy { it.locationId } },
+            initialFeatures = features,
+            locationsById = remember(locations) { locations.associateBy { it.locationId } },
             onMapReady = { map, style ->
                 mapLibreMap = map
                 mapStyle = style
@@ -238,7 +219,7 @@ fun MapScreen(
         }
     }
 
-    // Location detail bottom sheet (outside PullToRefreshBox)
+    // Location detail bottom sheet
     selectedLocation?.let { location ->
         ModalBottomSheet(onDismissRequest = { selectedLocation = null }) {
             Column(
@@ -310,14 +291,13 @@ private fun enableLocationComponent(map: MapLibreMap, style: Style, context: and
             renderMode = RenderMode.COMPASS
         }
     } catch (_: SecurityException) {
-        // Permission was revoked between check and use — no-op
     }
 }
 
 @Composable
 private fun MapLibreMapView(
     modifier: Modifier = Modifier,
-    allFeatures: List<Feature>,
+    initialFeatures: List<Feature>,
     locationsById: Map<String, WaffleHouseLocation>,
     onMapReady: (MapLibreMap, Style) -> Unit,
     onLocationSelected: (WaffleHouseLocation?) -> Unit,
@@ -350,24 +330,20 @@ private fun MapLibreMapView(
 
         mapView.getMapAsync { map ->
             map.setStyle(Style.Builder().fromUri("https://demotiles.maplibre.org/style.json")) { style ->
-                // Modern color scheme
                 (style.getLayer("background") as? BackgroundLayer)?.setProperties(
-                    PropertyFactory.backgroundColor("#C8DCE8") // muted ocean blue
+                    PropertyFactory.backgroundColor("#C8DCE8")
                 )
-                // Hide base style layers we replace ourselves
                 listOf("countries-fill", "coastline", "countries-boundary", "countries-label",
                        "geolines", "geolines-label", "crimea-fill").forEach { id ->
                     style.getLayer(id)?.setProperties(PropertyFactory.visibility(Property.NONE))
                 }
 
-                // State polygon source
                 style.addSource(
                     GeoJsonSource(
                         "us-states-source",
                         URI("https://raw.githubusercontent.com/PublicaMundi/MappingAPI/master/data/geojson/us-states.json")
                     )
                 )
-                // US land fill — continental states only (no Alaska or Hawaii)
                 style.addLayer(
                     FillLayer("us-states-fill", "us-states-source").withProperties(
                         PropertyFactory.fillColor("#F0EAD6"),
@@ -404,12 +380,10 @@ private fun MapLibreMapView(
                     )
                 )
 
-                // Add unified GeoJSON source
                 style.addSource(
-                    GeoJsonSource("wh-source", FeatureCollection.fromFeatures(allFeatures))
+                    GeoJsonSource("wh-source", FeatureCollection.fromFeatures(initialFeatures))
                 )
 
-                // One circle layer per status (makes visibility toggling simple)
                 listOf(
                     Triple("wh-layer-green", "GREEN", "#4CAF50"),
                     Triple("wh-layer-yellow", "YELLOW", "#FFC107"),
@@ -433,13 +407,11 @@ private fun MapLibreMapView(
                     )
                 }
 
-                // Restrict panning and zoom to the continental US
                 map.setLatLngBoundsForCameraTarget(
-                    LatLngBounds.from(49.5, -66.0, 24.0, -125.0) // north, east, south, west
+                    LatLngBounds.from(49.5, -66.0, 24.0, -125.0)
                 )
                 map.setMinZoomPreference(3.0)
 
-                // Center on continental US
                 map.cameraPosition = CameraPosition.Builder()
                     .target(LatLng(36.0, -96.0))
                     .zoom(3.5)
@@ -448,7 +420,6 @@ private fun MapLibreMapView(
                 onMapReadyRef.value(map, style)
             }
 
-            // Tap a marker to show bottom sheet
             map.addOnMapClickListener { latLng ->
                 val screenPoint = map.projection.toScreenLocation(latLng)
                 val hitRadius = 20f

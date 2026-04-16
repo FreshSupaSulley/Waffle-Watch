@@ -1,3 +1,13 @@
 <resources>
     <string name="app_name">Waffle Watch</string>
+    <string name="nav_home">Home</string>
+    <string name="nav_about">About</string>
+    <string name="nav_favorites">Favorites</string>
+    <string name="nav_profile">Profile</string>
+    <string name="welcome_title">Welcome to Waffle Watch</string>
+    <string name="intro_text">The Waffle House Index is an informal metric used to determine the severity of weather in a particular area.\n\n""Waffle House is notorious for being open no matter the weather, so if a Waffle House is closed, you know it\'s serious.\n\n""Use this app to determine how bad the weather actually is. If your local Waffle House is closed, maybe consider changing travel plans. Or use this app to find a tasty meal. Your choice.</string>
+    <string name="get_started">Get Started</string>
+    <string name="refreshing">Refreshing locations…</string>
+    <string name="retry">Retry</string>
+    <string name="failed_to_load">Failed to load locations: %1$s</string>
 </resources>

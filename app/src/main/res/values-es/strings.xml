@@ -1,0 +1,13 @@
+<resources>
+    <string name="app_name">Waffle Watch</string>
+    <string name="nav_home">Inicio</string>
+    <string name="nav_about">Acerca de</string>
+    <string name="nav_favorites">Favoritos</string>
+    <string name="nav_profile">Perfil</string>
+    <string name="welcome_title">Bienvenido a Waffle Watch</string>
+    <string name="intro_text">El Índice de Waffle House es una métrica informal utilizada para determinar la gravedad del clima en un área particular.\n\n""Waffle House es conocido por estar abierto sin importar el clima, así que si un Waffle House está cerrado, sabes que es serio.\n\n""Usa esta aplicación para determinar qué tan malo es realmente el clima. Si tu Waffle House local está cerrado, tal vez considera cambiar tus planes de viaje. O usa esta aplicación para encontrar una comida sabrosa. Tu elección.</string>
+    <string name="get_started">Comenzar</string>
+    <string name="refreshing">Actualizando ubicaciones…</string>
+    <string name="retry">Reintentar</string>
+    <string name="failed_to_load">Error al cargar las ubicaciones: %1$s</string>
+</resources>

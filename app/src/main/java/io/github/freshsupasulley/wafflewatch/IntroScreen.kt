@@ -5,6 +5,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 
@@ -18,7 +19,7 @@ fun IntroScreen(onGetStarted: () -> Unit) {
         verticalArrangement = Arrangement.Center
     ) {
         Text(
-            text = "Welcome to Waffle Watch",
+            text = stringResource(R.string.welcome_title),
             style = MaterialTheme.typography.headlineMedium,
             textAlign = TextAlign.Center
         )
@@ -26,9 +27,7 @@ fun IntroScreen(onGetStarted: () -> Unit) {
         Spacer(modifier = Modifier.height(16.dp))
         
         Text(
-            text = "The Waffle House Index is an informal metric used to determine the severity of weather in a particular area.\n\n" +
-                        "Waffle House is notorious for being open no matter the weather, so if a Waffle House is closed, you know it's serious.\n\n" +
-                        "Use this app to determine how bad the weather actually is. If your local Waffle House is closed, maybe consider changing travel plans. Or use this app to find a tasty meal. Your choice.",
+            text = stringResource(R.string.intro_text),
             style = MaterialTheme.typography.bodyLarge,
             textAlign = TextAlign.Center
         )
@@ -36,7 +35,7 @@ fun IntroScreen(onGetStarted: () -> Unit) {
         Spacer(modifier = Modifier.height(32.dp))
         
         Button(onClick = onGetStarted) {
-            Text("Get Started")
+            Text(stringResource(R.string.get_started))
         }
     }
 }
