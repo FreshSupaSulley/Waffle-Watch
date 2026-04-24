@@ -10,4 +10,5 @@
     <string name="refreshing">Refreshing locations…</string>
     <string name="retry">Retry</string>
     <string name="failed_to_load">Failed to load locations: %1$s</string>
+    <string name="no_internet">No internet connection. Please connect to the internet.</string>
 </resources>

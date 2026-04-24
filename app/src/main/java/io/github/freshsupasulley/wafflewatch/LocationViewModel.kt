@@ -13,6 +13,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.maplibre.geojson.Feature
 import org.maplibre.geojson.Point
+import java.io.IOException
 
 class LocationViewModel(application: Application) : AndroidViewModel(application) {
 
@@ -21,7 +22,6 @@ class LocationViewModel(application: Application) : AndroidViewModel(application
     private val _locations = MutableStateFlow<List<WaffleHouseLocation>>(emptyList())
     val locations: StateFlow<List<WaffleHouseLocation>> = _locations
 
-    // Performance Optimization: Pre-calculate GeoJSON features on a background thread
     private val _features = MutableStateFlow<List<Feature>>(emptyList())
     val features: StateFlow<List<Feature>> = _features
 
@@ -34,6 +34,9 @@ class LocationViewModel(application: Application) : AndroidViewModel(application
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading
 
+    private val _isNoInternet = MutableStateFlow(false)
+    val isNoInternet: StateFlow<Boolean> = _isNoInternet
+
     init {
         loadLocations()
     }
@@ -42,6 +45,7 @@ class LocationViewModel(application: Application) : AndroidViewModel(application
         viewModelScope.launch {
             _error.value = null
             _isLoading.value = true
+            _isNoInternet.value = false
             try {
                 // Load cache first for instant UI
                 val cached = repository.getCachedLocations()
@@ -54,7 +58,13 @@ class LocationViewModel(application: Application) : AndroidViewModel(application
                 val response = repository.fetchLocations()
                 updateLocationsState(response.locations)
                 _timestamp.value = response.timestamp
+                _isNoInternet.value = false
             } catch (e: Exception) {
+                // Check if it's a network/Cloudflare connection issue
+                if (e is IOException) {
+                    _isNoInternet.value = _locations.value.isEmpty()
+                }
+                
                 // Only show error if we have no cached data
                 if (_locations.value.isEmpty()) {
                     _error.value = e.message ?: "Network error"
@@ -67,7 +77,6 @@ class LocationViewModel(application: Application) : AndroidViewModel(application
 
     private suspend fun updateLocationsState(newList: List<WaffleHouseLocation>) {
         _locations.value = newList
-        // Offload heavy mapping to Default dispatcher (CPU intensive)
         _features.value = withContext(Dispatchers.Default) {
             newList.map { it.toFeature() }
         }

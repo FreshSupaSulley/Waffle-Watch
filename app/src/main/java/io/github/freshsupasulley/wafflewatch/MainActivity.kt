@@ -38,6 +38,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.viewmodel.compose.viewModel
 import io.github.freshsupasulley.wafflewatch.ui.MapScreen
+import io.github.freshsupasulley.wafflewatch.ui.NoInternetScreen
 import io.github.freshsupasulley.wafflewatch.ui.theme.WaffleWatchTheme
 import kotlinx.coroutines.launch
 import org.maplibre.android.MapLibre
@@ -63,6 +64,7 @@ fun WaffleWatchApp(viewModel: LocationViewModel = viewModel()) {
     val features by viewModel.features.collectAsState()
     val timestamp by viewModel.timestamp.collectAsState()
     val fetchError by viewModel.error.collectAsState()
+    val isNoInternet by viewModel.isNoInternet.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
@@ -95,18 +97,23 @@ fun WaffleWatchApp(viewModel: LocationViewModel = viewModel()) {
     val retryLabel = stringResource(R.string.retry)
     LaunchedEffect(fetchError) {
         val error = fetchError ?: return@LaunchedEffect
-        val result = snackbarHostState.showSnackbar(
-            message = String.format(failedMsg, error),
-            actionLabel = retryLabel,
-            duration = SnackbarDuration.Indefinite,
-        )
-        if (result == SnackbarResult.ActionPerformed) {
-            viewModel.loadLocations()
+        // Only show snackbar error if we're not showing the full NoInternetScreen
+        if (!isNoInternet) {
+            val result = snackbarHostState.showSnackbar(
+                message = String.format(failedMsg, error),
+                actionLabel = retryLabel,
+                duration = SnackbarDuration.Indefinite,
+            )
+            if (result == SnackbarResult.ActionPerformed) {
+                viewModel.loadLocations()
+            }
         }
     }
 
     if (showIntro) {
         IntroScreen(onGetStarted = { showIntro = false })
+    } else if (isNoInternet) {
+        NoInternetScreen(onRetry = { viewModel.loadLocations() })
     } else {
         NavigationSuiteScaffold(
             navigationSuiteItems = {
